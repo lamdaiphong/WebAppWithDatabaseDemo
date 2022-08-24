@@ -1,65 +1,72 @@
-trigger:
-  - development
+# Maven package Java project Web App to Linux on Azure
+# Build your Java project and deploy it to Azure as a Linux web app
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
 
-pool:
-  name: mubanpool
+trigger:
+- master
+
+variables:
+
+  # Azure Resource Manager connection created during pipeline creation
+  azureSubscription: '4c8e7db9-7472-409e-8b5a-49c63cab73e1'
+  
+  # Web app name
+  webAppName: 'java-spring-boot'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
 
 stages:
 - stage: Build
+  displayName: Build stage
   jobs:
-  - job: BuildJob
+  - job: MavenPackageAndPublishArtifacts
+    displayName: Maven Package and Publish Artifacts
+    pool:
+      vmImage: $(vmImageName)
+    
     steps:
-    - task: UseDotNet@2
-      displayName: Restore
+    - task: Maven@3
+      displayName: 'Maven Package'
       inputs:
-        packageType: sdk
-        version: 2.1.x
-        command: restore
-        projects: '**/*.csproj'
-        arguments: '--configuration $(BuildConfiguration)'
-        includePreviewVersions: true
+        mavenPomFile: 'app/pom.xml'
 
-    - task: UseDotNet@2
-      displayName: Build
+    - task: CopyFiles@2
+      displayName: 'Copy Files to artifact staging directory'
       inputs:
-        packageType: sdk
-        version: 2.1.x
-        command: build
-        projects: '**/*.csproj'
-        arguments: '--configuration $(BuildConfiguration)'
-        includePreviewVersions: true
+        SourceFolder: '$(System.DefaultWorkingDirectory)'
+        Contents: '**/target/*.?(war|jar)'
+        TargetFolder: $(Build.ArtifactStagingDirectory)
 
-- stage: Testing
+    - task: PublishPipelineArtifact@0
+      displayName: 'Publish pipeline artifacts'
+      inputs:
+        targetPath: $(Build.ArtifactStagingDirectory)
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+  condition: succeeded()
   jobs:
-  - job: TestJob
-    steps:
-    - task: UseDotNet@2
-      displayName: Test
-      inputs:
-        packageType: sdk
-        version: 2.1.x
-        command: test
-        projects: '**/*Tests/*.csproj'
-        arguments: '--configuration $(BuildConfiguration)'
-        includePreviewVersions: true
+  - deployment: DeployLinuxWebApp
+    displayName: Deploy Linux Web App
+    environment: 'development'
+    pool: 
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadPipelineArtifact@1
+            displayName: 'Download Pipeline Artifact'
+            inputs:
+              buildType: 'current'
 
-- stage: Publish
-  jobs:
-  - job: PublishJob
-    steps:        
-    - task: UseDotNet@2
-      displayName: Publish
-      inputs:
-        packageType: sdk
-        version: 2.1.x
-        command: publish
-        publishWebProjects: True
-        arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
-        zipAfterPublish: True
-        includePreviewVersions: true
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifact'
-      inputs:
-        PathtoPublish: '$(build.artifactstagingdirectory)'
-      condition: succeededOrFailed()
+          - task: AzureWebApp@1
+            displayName: 'Azure Web App Deploy: gs-spring-boot'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: webAppLinux
+              appName: $(webAppName)
+              package: '$(System.ArtifactsDirectory)/drop/**/target/*.?(war|jar)'
