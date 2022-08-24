@@ -19,8 +19,6 @@ stages:
     - task: DotNetCoreCLI@2
       displayName: Build
       inputs:
-        packageType: sdk
-        version: 5.0.301
         command: build
         projects: '**/*.csproj'
         arguments: '--configuration $(BuildConfiguration)'
