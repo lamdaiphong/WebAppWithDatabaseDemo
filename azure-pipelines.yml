@@ -33,24 +33,30 @@ stages:
   jobs:
   - job: TestJob
     steps:
-    - task: DotNetCoreCLI@2
+    - task: UseDotNet@2
       displayName: Test
       inputs:
+        packageType: sdk
+        version: 2.1.x
         command: test
         projects: '**/*Tests/*.csproj'
         arguments: '--configuration $(BuildConfiguration)'
+        includePreviewVersions: true
 
 - stage: Publish
   jobs:
   - job: PublishJob
     steps:        
-    - task: DotNetCoreCLI@2
+    - task: UseDotNet@2
       displayName: Publish
       inputs:
+        packageType: sdk
+        version: 2.1.x
         command: publish
         publishWebProjects: True
         arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
         zipAfterPublish: True
+        includePreviewVersions: true
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact'
