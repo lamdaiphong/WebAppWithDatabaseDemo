@@ -19,7 +19,7 @@ stages:
         arguments: '--configuration $(BuildConfiguration)'
         includePreviewVersions: true
 
-    - task: DotNetCoreCLI@2
+    - task: UseDotNet@2
       displayName: Build
       inputs:
         packageType: sdk
