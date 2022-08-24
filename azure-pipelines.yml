@@ -9,19 +9,25 @@ stages:
   jobs:
   - job: BuildJob
     steps:
-    - task: DotNetCoreCLI@2
+    - task: UseDotNet@2
       displayName: Restore
       inputs:
+        packageType: sdk
+        version: 2.1.x
         command: restore
         projects: '**/*.csproj'
         arguments: '--configuration $(BuildConfiguration)'
+        includePreviewVersions: true
 
     - task: DotNetCoreCLI@2
       displayName: Build
       inputs:
+        packageType: sdk
+        version: 2.1.x
         command: build
         projects: '**/*.csproj'
         arguments: '--configuration $(BuildConfiguration)'
+        includePreviewVersions: true
 
 - stage: Testing
   jobs:
