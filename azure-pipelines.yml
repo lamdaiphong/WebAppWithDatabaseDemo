@@ -2,7 +2,7 @@ trigger:
   - development
 
 pool:
-  name: Default
+  name: mubanpool
 
 stages:
 - stage: Build
