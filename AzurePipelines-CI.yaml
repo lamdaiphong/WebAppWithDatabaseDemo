@@ -1,5 +1,5 @@
 pool:
-  vmImage: 'ubuntu-16.04' # Hosted Ubuntu 1604
+  vmImage: 'linux' # Hosted Ubuntu 1604
   demands: maven
 
 steps:
